@@ -2,9 +2,9 @@ name: CI/CD Laravel
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   ci:
@@ -91,7 +91,7 @@ jobs:
     # Si un test échoue → pas de déploiement
 
     # Ce job ne tourne QUE sur un push sur main (pas sur les pull requests)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
     steps:
       - name: Checkout du code
