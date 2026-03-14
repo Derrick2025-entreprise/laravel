@@ -94,25 +94,19 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      # ✅ ÉTAPE 1 — Récupérer le code
       - name: Checkout du code
         uses: actions/checkout@v4
 
-      # ✅ ÉTAPE 2 — Se connecter à Docker Hub
       - name: Connexion à Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          # Les secrets sont injectés ici, jamais visibles dans les logs
 
-      # ✅ ÉTAPE 3 — Configurer Docker Buildx
       - name: Configurer Docker Buildx
         uses: docker/setup-buildx-action@v3
-        # Buildx = version améliorée de docker build
         # Permet le cache, les builds multi-architecture, etc.
 
-      # ✅ ÉTAPE 4 — Construire et pousser l'image
       - name: Build et Push de l'image Docker
         uses: docker/build-push-action@v5
         with:
@@ -121,41 +115,5 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/enrolcm:latest
             ${{ secrets.DOCKER_USERNAME }}/enrolcm:${{ github.sha }}
-          # On crée 2 tags :
-          # :latest    → toujours la dernière version
-          # :abc123def → tag unique par commit (pour rollback facile)
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # Cache GitHub Actions → les builds suivants sont beaucoup plus rapides
-
-      # ✅ ÉTAPE 5 — Déployer sur le serveur via SSH
-      - name: Déployer sur le serveur
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            # Se connecter au registre Docker Hub
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-
-            # Télécharger la nouvelle image
-            docker pull ${{ secrets.DOCKER_USERNAME }}/enrolcm:latest
-
-            # Arrêter et supprimer l'ancien conteneur
-            docker stop enrolcm || true
-            docker rm enrolcm || true
-
-            # Démarrer le nouveau conteneur
-            docker run -d \
-              --name enrolcm \
-              --restart always \
-              -p 80:80 \
-              --env-file /var/www/.env \
-              ${{ secrets.DOCKER_USERNAME }}/enrolcm:latest
-
-            # Lancer les migrations de production
-            docker exec enrolcm php artisan migrate --force
-
-            # Nettoyer les vieilles images inutilisées
-            docker image prune -f
