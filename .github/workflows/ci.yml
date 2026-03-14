@@ -58,7 +58,7 @@ jobs:
         run: php artisan migrate --force
 
       - name: Tests
-        run: php artisan test --parallel
+        run: php artisan test
 
   # ─────────────────────────────────────────────
   # JOB 2 — CD : Build Docker + Push sur Docker Hub
