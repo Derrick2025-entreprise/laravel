@@ -27,7 +27,25 @@ Route::prefix('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
-    Route::get('/user', [AuthController::class, 'user'])->middleware('auth:sanctum');
+
+    // Profil de l'utilisateur connecté (utilisé par les tests)
+    Route::middleware('auth:sanctum')->get('/profile', function (Request $request) {
+        $user = $request->user();
+
+        $candidate = $user->candidate;
+        $primaryRole = $user->roles()->first();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $user->id,
+                'email' => $user->email,
+                'nom' => $candidate?->nom,
+                'prenom' => $candidate?->prenom,
+                'role' => $primaryRole?->slug,
+            ],
+        ]);
+    });
 });
 
 // Routes de vérification QR Code (publiques)

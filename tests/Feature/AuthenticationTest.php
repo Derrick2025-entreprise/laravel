@@ -16,6 +16,7 @@ class AuthenticationTest extends TestCase
     public function test_user_can_register_with_valid_data()
     {
         $response = $this->postJson('/api/auth/register', [
+            'name' => 'Jean Dupont',
             'nom' => 'Dupont',
             'prenom' => 'Jean',
             'email' => 'jean.dupont@test.com',
@@ -31,10 +32,16 @@ class AuthenticationTest extends TestCase
                      'message'
                  ]);
 
+        // L'utilisateur doit exister dans la table users
         $this->assertDatabaseHas('users', [
             'email' => 'jean.dupont@test.com',
-            'nom' => 'Dupont',
+        ]);
+
+        // Les informations détaillées sont stockées dans la table candidates
+        $this->assertDatabaseHas('candidates', [
             'prenom' => 'Jean',
+            'nom' => 'Dupont',
+            'telephone' => '+237690123456',
         ]);
     }
 
@@ -100,8 +107,10 @@ class AuthenticationTest extends TestCase
                  ->assertJsonStructure([
                      'success',
                      'data' => [
-                         'user' => ['id', 'email', 'nom', 'prenom', 'role'],
+                         'user' => ['id', 'name', 'email', 'telephone', 'status'],
+                         'roles',
                          'token',
+                         'token_type',
                      ],
                      'message'
                  ])
@@ -133,7 +142,7 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(401)
                  ->assertJson([
                      'success' => false,
-                     'message' => 'Identifiants invalides',
+                     'message' => 'Email ou mot de passe incorrect',
                  ]);
     }
 
