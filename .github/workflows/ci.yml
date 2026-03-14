@@ -10,38 +10,20 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
-    # Service MySQL pour les tests (votre projet utilise MySQL)
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: enrolcm
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-
-    # Variables d'environnement partagées par toutes les étapes du job
     env:
-      DB_CONNECTION: mysql
-      DB_HOST: 127.0.0.1
-      DB_PORT: 3306
-      DB_DATABASE: enrolcm
-      DB_USERNAME: root
-      DB_PASSWORD: password
+      DB_CONNECTION: sqlite
+      DB_DATABASE: database/database.sqlite
 
     steps:
       # ✅ ÉTAPE 1 — Récupérer le code source depuis GitHub
       - name: Checkout du code
         uses: actions/checkout@v4
 
-      # ✅ ÉTAPE 2 — Installer PHP 8.2 avec les extensions nécessaires
       - name: Installer PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, pdo, pdo_mysql, xml, zip, gd
-          # gd est nécessaire pour endroid/qr-code et dompdf
+          extensions: mbstring, pdo_mysql, pdo_sqlite, xml, zip, gd, fileinfo, bcmath
 
       # ✅ ÉTAPE 3 — Installer les dépendances PHP via Composer
       - name: Installer les dépendances Composer
@@ -50,11 +32,11 @@ jobs:
         # --prefer-dist      : télécharge les archives (plus rapide)
         # --optimize-autoloader : optimise le chargement des classes
 
-      # ✅ ÉTAPE 4 — Créer le fichier .env pour les tests
       - name: Copier le fichier .env
         run: cp .env.example .env
-        # GitHub ne dispose pas de votre vrai .env (il est dans .gitignore)
-        # On part de .env.example comme base
+
+      - name: Créer la base SQLite pour les migrations
+        run: touch database/database.sqlite
 
       # ✅ ÉTAPE 5 — Générer la clé d'application Laravel
       - name: Générer la clé APP_KEY
