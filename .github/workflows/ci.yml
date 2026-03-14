@@ -10,57 +10,56 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: enrolcm
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     env:
-      DB_CONNECTION: sqlite
-      DB_DATABASE: database/database.sqlite
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: enrolcm
+      DB_USERNAME: root
+      DB_PASSWORD: password
 
     steps:
-      # ✅ ÉTAPE 1 — Récupérer le code source depuis GitHub
-      - name: Checkout du code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Installer PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, pdo_mysql, pdo_sqlite, xml, zip, gd, fileinfo, bcmath
+          extensions: mbstring, pdo_mysql, xml, zip, gd, fileinfo, bcmath
+          coverage: none
 
-      # ✅ ÉTAPE 3 — Installer les dépendances PHP via Composer
-      - name: Installer les dépendances Composer
+      - name: Installer Composer
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
-        # --no-interaction   : pas de questions pendant l'install
-        # --prefer-dist      : télécharge les archives (plus rapide)
-        # --optimize-autoloader : optimise le chargement des classes
 
-      - name: Copier le fichier .env
-        run: cp .env.example .env
+      - name: Préparer .env
+        run: |
+          cp .env.example .env
+          php artisan key:generate
 
-      - name: Créer la base SQLite pour les migrations
-        run: touch database/database.sqlite
-
-      # ✅ ÉTAPE 5 — Générer la clé d'application Laravel
-      - name: Générer la clé APP_KEY
-        run: php artisan key:generate
-        # Laravel chiffre sessions et cookies avec cette clé
-        # Elle est écrite automatiquement dans le .env
-
-      # ✅ ÉTAPE 6 — Vider le cache de config (pour que Laravel lise bien les env du job)
-      - name: Vider le cache de configuration
+      - name: Vider le cache
         run: php artisan config:clear
 
       # ✅ ÉTAPE 7 — Lancer les migrations
-      - name: Lancer les migrations
+      - name: Migrations
         run: php artisan migrate --force
-        # --force : obligatoire hors environnement local (évite la confirmation interactive)
 
-      # ✅ ÉTAPE 8 — Lancer les tests
-      - name: Lancer les tests
-        run: php artisan test --parallel --stop-on-failure
-        # "php artisan test" est le raccourci Laravel pour PHPUnit
-        # --parallel      : lance les tests en parallèle (plus rapide)
-        # --stop-on-failure : s'arrête au premier test échoué
-        # Si un test échoue → le pipeline s'arrête et GitHub affiche une erreur ❌
-        # Si tous passent → pipeline vert ✅
+      - name: Tests
+        run: php artisan test --parallel
 
   # ─────────────────────────────────────────────
   # JOB 2 — CD : Build Docker + Push sur Docker Hub
