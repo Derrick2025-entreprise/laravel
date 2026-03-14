@@ -54,7 +54,6 @@ jobs:
       - name: Vider le cache
         run: php artisan config:clear
 
-      # ✅ ÉTAPE 7 — Lancer les migrations
       - name: Migrations
         run: php artisan migrate --force
 
