@@ -90,7 +90,7 @@ jobs:
     # Ce job ne démarre QUE si le job "ci" a réussi
     # Si un test échoue → pas de déploiement
 
-    # Ce job ne tourne QUE sur un push sur main (pas sur les pull requests)
+    # Ce job ne tourne QUE sur un push sur master (pas sur les pull requests)
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
     steps:
@@ -113,7 +113,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/enrolcm:latest
-            ${{ secrets.DOCKER_USERNAME }}/enrolcm:${{ github.sha }}
+            derrickdev/enrolcm:latest
+            derrickdev/enrolcm:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
